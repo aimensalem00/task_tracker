@@ -18,6 +18,9 @@ def create_parser():
     update_parser = subparsers.add_parser('update', help='Command to update a task')
     update_parser.add_argument('task_id', type=int, help='Task number to be updated')
     update_parser.add_argument('task_description', type=str, help='Task to be updated')
+    # Subparser for "mark_done" command
+    mark_done_parser = subparsers.add_parser('mark_done', help='Command to mark a task as done')
+    mark_done_parser.add_argument('task_id', type=int, help='Task number to be marked as done')
     return parser
 
 # Check the JSON file
@@ -77,11 +80,12 @@ def delete_task(task_id, file_path):
         for task in data:
           if task['id'] == task_id:
                 data.remove(task)
+                print(f'Task {task_id} deleted successfully!')
                 break
     # Save the JSON file
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=4)
-    print(f'Task {task_id} deleted successfully!')
+    
 
 # Update a task
 def update_task(task_id, task_update, file_path):
@@ -92,6 +96,7 @@ def update_task(task_id, task_update, file_path):
         print('No tasks found!')
         return
     # Find the task by ID
+    length = len(data)
     for task in data:
         if task['id'] == task_id:
             task['description'] = task_update
@@ -100,9 +105,37 @@ def update_task(task_id, task_update, file_path):
             with open(file_path, 'w') as f:
                 json.dump(data, f, indent=4)
             print(f'Task {task_id} updated successfully!')
-        else:
-            print(f'Task {task_id} do not exist!')
             break
+        else:
+            length -= 1
+    if length == 0:
+        print(f'Task {task_id} not found!')
+
+
+# Mark a task as done
+def mark_done(task_id, file_path):
+    # Load the JSON file
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    if not data:
+        print('No tasks found!')
+        return
+    # Find the task by ID
+    length = len(data)
+    for task in data:
+        if task['id'] == task_id:
+            task['status'] = 'done'
+            task['updated_at'] = datetime.now().isoformat()
+            # Save the JSON file
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=4)
+            print(f'Task {task_id} marked as done successfully!')
+            break
+        else:
+            length -= 1
+    if length == 0:
+        print(f'Task {task_id} not found!')
+
 
 # Main function
 def main():
@@ -116,7 +149,8 @@ def main():
     commands = {
         'add': lambda: add_task(args.task_description, 'tasker.json'),
         'delete': lambda: delete_task(args.task_id, 'tasker.json'),
-        'update': lambda: update_task(args.task_id, args.task_description, 'tasker.json')
+        'update': lambda: update_task(args.task_id, args.task_description, 'tasker.json'),
+        'mark_done': lambda: mark_done(args.task_id, 'tasker.json')
     }
     if check_json('tasker.json'):
         command_function = commands.get(args.command)
